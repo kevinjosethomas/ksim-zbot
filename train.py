@@ -81,6 +81,70 @@ class JointPositionPenalty(ksim.JointDeviationPenalty):
             scale_by_curriculum=scale_by_curriculum,
         )
 
+@attrs.define(frozen=True, kw_only=True)
+class BentArmPenalty(JointPositionPenalty):
+    @classmethod
+    def create_penalty(
+        cls,
+        physics_model: ksim.PhysicsModel,
+        scale: float = -1.0,
+        scale_by_curriculum: bool = False,
+    ) -> Self:
+        return cls.create_from_names(
+            names=[
+                "right_shoulder_pitch",
+                "right_shoulder_roll",
+                "right_elbow_roll",
+                "left_shoulder_pitch",
+                "left_shoulder_roll",
+                "left_elbow_roll",
+            ],
+            physics_model=physics_model,
+            scale=scale,
+            scale_by_curriculum=scale_by_curriculum,
+        )
+    
+@attrs.define(frozen=True, kw_only=True)
+class BentGripperPenalty(JointPositionPenalty):
+    @classmethod
+    def create_penalty(
+        cls,
+        physics_model: ksim.PhysicsModel,
+        scale: float = -1.0,
+        scale_by_curriculum: bool = False,
+    ) -> Self:
+        return cls.create_from_names(
+            names=[
+                "right_gripper_roll",
+                "left_gripper_roll",
+            ],
+            physics_model=physics_model,
+            scale=scale,
+            scale_by_curriculum=scale_by_curriculum,
+        )
+
+
+@attrs.define(frozen=True, kw_only=True)
+class StraightLegPenalty(JointPositionPenalty):
+    @classmethod
+    def create_penalty(
+        cls,
+        physics_model: ksim.PhysicsModel,
+        scale: float = -1.0,
+        scale_by_curriculum: bool = False,
+    ) -> Self:
+        return cls.create_from_names(
+            names=[
+                "dof_left_hip_roll_03",
+                "dof_left_hip_yaw_03",
+                "dof_right_hip_roll_03",
+                "dof_right_hip_yaw_03",
+            ],
+            physics_model=physics_model,
+            scale=scale,
+            scale_by_curriculum=scale_by_curriculum,
+        )
+
 
 class Actor(eqx.Module):
     """Actor for the walking task."""
@@ -629,26 +693,28 @@ class ZbotWalkingTask(ksim.PPOTask[ZbotWalkingTaskConfig]):
         return [
             # Standard rewards.
             ksim.StayAliveReward(scale=1.0),
-            ksim.UprightReward(scale=0.1),
-            # ksim.NaiveForwardReward(clip_min=0.0, clip_max=0.5, scale=1.0),
+            ksim.UprightReward(scale=0.5),
+            ksim.NaiveForwardReward(clip_max=1.0, scale=2.5),
+            ksim.NaiveForwardOrientationReward(scale=1.0),
             # Avoid movement penalties.
-            ksim.AngularVelocityPenalty(index=("x", "y", "z"), scale=-0.005),
-            ksim.LinearVelocityPenalty(index=("x", "y", "z"), scale=-0.005),
+            ksim.AngularVelocityPenalty(index=("x", "y"), scale=-0.1),
+            ksim.LinearVelocityPenalty(index=("z"), scale=-0.1),
             # Normalization penalties.
-            # ksim.ActionInBoundsReward.create(physics_model, scale=0.01),
             ksim.AvoidLimitsPenalty.create(physics_model, scale=-0.01),
-            # ksim.ActionNearPositionPenalty(joint_threshold=math.radians(2.0), scale=-0.01),
-            ksim.JointVelocityPenalty(scale=-0.01, scale_by_curriculum=True),
-            # ksim.ActionSmoothnessPenalty(scale=-0.01),
-            # ksim.ActuatorRelativeForcePenalty.create(physics_model, scale=-0.01),
-            # # Bespoke rewards.
-            # BentArmPenalty.create_penalty(physics_model, scale=-0.1),
-            # StraightLegPenalty.create_penalty(physics_model, scale=-0.1),
-            JointPositionPenalty.create_from_names(
-                physics_model=physics_model,
-                names=[name for name, _ in ZEROS],
-                scale=-0.1,
+            ksim.JointAccelerationPenalty(
+                scale=-0.01, scale_by_curriculum=True
             ),
+            ksim.JointJerkPenalty(scale=-0.01, scale_by_curriculum=True),
+            ksim.LinkAccelerationPenalty(
+                scale=-0.01, scale_by_curriculum=True
+            ),
+            ksim.LinkJerkPenalty(scale=-0.01, scale_by_curriculum=True),
+            ksim.ActionAccelerationPenalty(
+                scale=-0.01, scale_by_curriculum=True
+            ),
+            ksim.BentArmPenalty.create_penalty(physics_model, scale=-0.1),
+            ksim.StraightLegPenalty.create_penalty(physics_model, scale=-0.1),
+            ksim.BentGripperPenalty.create_penalty(physics_model, scale=-0.3),
         ]
 
     def get_terminations(self, physics_model: ksim.PhysicsModel) -> list[ksim.Termination]:
@@ -657,7 +723,7 @@ class ZbotWalkingTask(ksim.PPOTask[ZbotWalkingTaskConfig]):
             # ksim.PitchTooGreatTermination(max_pitch=math.radians(30)),
             # ksim.RollTooGreatTermination(max_roll=math.radians(30)),
             # ksim.HighVelocityTermination(),
-            # ksim.FarFromOriginTermination(max_dist=10.0),
+            ksim.FarFromOriginTermination(max_dist=15.0),
         ]
 
     def get_curriculum(self, physics_model: ksim.PhysicsModel) -> ksim.Curriculum:
@@ -834,7 +900,7 @@ if __name__ == "__main__":
             # Checkpointing parameters.
             save_every_n_seconds=60,
             valid_every_n_steps=20,
-            render_full_every_n_steps=1,
+            # render_full_every_n_steps=1,
             valid_first_n_steps=1,
         ),
     )
