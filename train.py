@@ -135,10 +135,10 @@ class StraightLegPenalty(JointPositionPenalty):
     ) -> Self:
         return cls.create_from_names(
             names=[
-                "dof_left_hip_roll_03",
-                "dof_left_hip_yaw_03",
-                "dof_right_hip_roll_03",
-                "dof_right_hip_yaw_03",
+                "left_hip_roll",
+                "left_hip_yaw",
+                "right_hip_roll",
+                "right_hip_yaw",
             ],
             physics_model=physics_model,
             scale=scale,
