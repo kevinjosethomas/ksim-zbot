@@ -712,9 +712,9 @@ class ZbotWalkingTask(ksim.PPOTask[ZbotWalkingTaskConfig]):
             ksim.ActionAccelerationPenalty(
                 scale=-0.01, scale_by_curriculum=True
             ),
-            ksim.BentArmPenalty.create_penalty(physics_model, scale=-0.1),
-            ksim.StraightLegPenalty.create_penalty(physics_model, scale=-0.1),
-            ksim.BentGripperPenalty.create_penalty(physics_model, scale=-0.3),
+            BentArmPenalty.create_penalty(physics_model, scale=-0.1),
+            StraightLegPenalty.create_penalty(physics_model, scale=-0.1),
+            BentGripperPenalty.create_penalty(physics_model, scale=-0.3),
         ]
 
     def get_terminations(self, physics_model: ksim.PhysicsModel) -> list[ksim.Termination]:
