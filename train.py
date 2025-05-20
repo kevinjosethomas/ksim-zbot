@@ -676,26 +676,26 @@ class ZbotWalkingTask(ksim.PPOTask[ZbotWalkingTaskConfig]):
             # Standard rewards.
             ksim.StayAliveReward(scale=1.0),
             ksim.UprightReward(scale=0.5),
-            ksim.NaiveForwardReward(clip_max=1.0, scale=2.0),
+            ksim.NaiveForwardReward(clip_max=2.0, scale=3.0),
             ksim.NaiveForwardOrientationReward(scale=1.0),
-            StraightLegPenalty.create_penalty(physics_model, scale=-1.0),
+            StraightLegPenalty.create_penalty(physics_model, scale=-0.5),
             # Avoid movement penalties.
             ksim.AngularVelocityPenalty(index=("x"), scale=-0.2),
             ksim.LinearVelocityPenalty(index=("z"), scale=-0.1),
+            BentArmPenalty.create_penalty(physics_model, scale=-0.1),
             # Normalization penalties.
             ksim.AvoidLimitsPenalty.create(physics_model, scale=-0.01),
-            # ksim.JointAccelerationPenalty(
-            #     scale=-0.01, scale_by_curriculum=True
-            # ),
-            # ksim.JointJerkPenalty(scale=-0.01, scale_by_curriculum=True),
-            # ksim.LinkAccelerationPenalty(
-            #     scale=-0.01, scale_by_curriculum=True
-            # ),
-            # ksim.LinkJerkPenalty(scale=-0.01, scale_by_curriculum=True),
+            ksim.JointAccelerationPenalty(
+                scale=-0.01, scale_by_curriculum=True
+            ),
+            ksim.JointJerkPenalty(scale=-0.01, scale_by_curriculum=True),
+            ksim.LinkAccelerationPenalty(
+                scale=-0.01, scale_by_curriculum=True
+            ),
+            ksim.LinkJerkPenalty(scale=-0.01, scale_by_curriculum=True),
             ksim.ActionAccelerationPenalty(
                 scale=-0.01, scale_by_curriculum=True
             ),
-            BentArmPenalty.create_penalty(physics_model, scale=-0.5),
         ]
 
     def get_terminations(self, physics_model: ksim.PhysicsModel) -> list[ksim.Termination]:
