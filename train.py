@@ -674,15 +674,20 @@ class ZbotWalkingTask(ksim.PPOTask[ZbotWalkingTaskConfig]):
     def get_rewards(self, physics_model: ksim.PhysicsModel) -> list[ksim.Reward]:
         return [
             # Standard rewards.
-            ksim.StayAliveReward(scale=1.0),
-            ksim.UprightReward(scale=1.0),
-            ksim.NaiveForwardReward(clip_max=2.0, scale=3.0),
+            ksim.NaiveForwardReward(clip_max=2.0, scale=2.0),
+            ksim.FlatBodyReward.create(
+                physics_model=physics_model,
+                body_names=("Left_Foot", "Right_Foot"),
+                scale=1.0,
+            ),  
             ksim.NaiveForwardOrientationReward(scale=1.0),
-            StraightLegPenalty.create_penalty(physics_model, scale=-0.5),
+            ksim.StayAliveReward(scale=1.0),
+            ksim.UprightReward(scale=0.5),
             # Avoid movement penalties.
-            ksim.AngularVelocityPenalty(index=("x"), scale=-0.2),
-            ksim.LinearVelocityPenalty(index=("z"), scale=-0.1),
+            StraightLegPenalty.create_penalty(physics_model, scale=-0.4),
+            ksim.AngularVelocityPenalty(index=("x", "y"), scale=-0.2),
             BentArmPenalty.create_penalty(physics_model, scale=-0.1),
+            ksim.LinearVelocityPenalty(index=("z"), scale=-0.1),
             # Normalization penalties.
             ksim.AvoidLimitsPenalty.create(physics_model, scale=-0.01),
             ksim.JointAccelerationPenalty(
