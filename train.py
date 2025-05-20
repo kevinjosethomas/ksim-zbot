@@ -128,6 +128,29 @@ class StraightLegPenalty(JointPositionPenalty):
             scale_by_curriculum=scale_by_curriculum,
         )
 
+
+@attrs.define(frozen=True, kw_only=True)
+class BentLegReward(JointPositionPenalty):
+    @classmethod
+    def create_penalty(
+        cls,
+        physics_model: ksim.PhysicsModel,
+        scale: float = 1.0,
+        scale_by_curriculum: bool = False,
+    ) -> Self:
+        return cls.create_from_names(
+            names=[
+                "right_hip_pitch",
+                "left_hip_pitch",
+                "right_knee_pitch",
+                "left_knee_pitch",
+            ],
+            physics_model=physics_model,
+            scale=scale,
+            scale_by_curriculum=scale_by_curriculum,
+        )
+
+
 class Actor(eqx.Module):
     """Actor for the walking task."""
 
@@ -674,17 +697,18 @@ class ZbotWalkingTask(ksim.PPOTask[ZbotWalkingTaskConfig]):
     def get_rewards(self, physics_model: ksim.PhysicsModel) -> list[ksim.Reward]:
         return [
             # Standard rewards.
-            ksim.NaiveForwardReward(clip_max=2.0, scale=2.0),
+            ksim.NaiveForwardReward(clip_max=2.0, scale=3.0),
+            ksim.NaiveForwardOrientationReward(scale=1.0),
+            ksim.StayAliveReward(scale=1.0),
             ksim.FlatBodyReward.create(
                 physics_model=physics_model,
                 body_names=("Left_Foot", "Right_Foot"),
-                scale=1.0,
+                scale=0.8,
             ),  
-            ksim.NaiveForwardOrientationReward(scale=1.0),
-            ksim.StayAliveReward(scale=1.0),
             ksim.UprightReward(scale=0.5),
+            BentLegReward.create_penalty(physics_model, scale=0.1),
             # Avoid movement penalties.
-            StraightLegPenalty.create_penalty(physics_model, scale=-0.4),
+            # StraightLegPenalty.create_penalty(physics_model, scale=-0.4),
             ksim.AngularVelocityPenalty(index=("x", "y"), scale=-0.2),
             BentArmPenalty.create_penalty(physics_model, scale=-0.1),
             ksim.LinearVelocityPenalty(index=("z"), scale=-0.1),
