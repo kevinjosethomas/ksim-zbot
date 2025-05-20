@@ -612,16 +612,16 @@ class ZbotWalkingTask(ksim.PPOTask[ZbotWalkingTaskConfig]):
 
     def get_events(self, physics_model: ksim.PhysicsModel) -> list[ksim.Event]:
         return [
-            ksim.PushEvent(
-                x_force=1.0,  # velocity in m/s
-                y_force=1.0,
-                z_force=0.1,
-                force_range=(0.01, 0.5),
-                x_angular_force=0.1,  # angular velocity in rad/s
-                y_angular_force=0.1,
-                z_angular_force=0.5,
-                interval_range=(0.5, 4.0),
-            ),
+            # ksim.PushEvent(
+            #     x_force=1.0,  # velocity in m/s
+            #     y_force=1.0,
+            #     z_force=0.1,
+            #     force_range=(0.01, 0.5),
+            #     x_angular_force=0.1,  # angular velocity in rad/s
+            #     y_angular_force=0.1,
+            #     z_angular_force=0.5,
+            #     interval_range=(0.5, 4.0),
+            # ),
         ]
 
     def get_resets(self, physics_model: ksim.PhysicsModel) -> list[ksim.Reset]:
@@ -675,7 +675,7 @@ class ZbotWalkingTask(ksim.PPOTask[ZbotWalkingTaskConfig]):
         return [
             # Standard rewards.
             ksim.StayAliveReward(scale=1.0),
-            ksim.UprightReward(scale=0.5),
+            ksim.UprightReward(scale=1.0),
             ksim.NaiveForwardReward(clip_max=2.0, scale=3.0),
             ksim.NaiveForwardOrientationReward(scale=1.0),
             StraightLegPenalty.create_penalty(physics_model, scale=-0.5),
